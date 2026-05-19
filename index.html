@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">2048</div>
+      <div class="scores">
+        <div class="score-box">
+          <span class="score-label">PUNTOS</span>
+          <span id="score" class="score-value">0</span>
+        </div>
+        <div class="score-box best">
+          <span class="score-label">MEJOR</span>
+          <span id="best-score" class="score-value">0</span>
+        </div>
+      </div>
+    </div>
+    <div class="subheader">
+      <p>Fusiona los números hasta llegar a <strong>2048</strong></p>
+      <button id="new-game-btn">Nuevo juego</button>
+    </div>
+    <div class="game-container">
+      <div id="game-over-overlay" class="game-overlay hidden">
+        <div class="overlay-content">
+          <h2>¡Game Over!</h2>
+          <p id="final-score-msg">Puntuación: 0</p>
+          <button id="restart-btn-overlay">Intentar de nuevo</button>
+        </div>
+      </div>
+      <div id="win-overlay" class="game-overlay hidden">
+        <div class="overlay-content win">
+          <h2>¡Has ganado!</h2>
+          <p>¡Llegaste a 2048!</p>
+          <div class="win-btns">
+            <button id="continue-btn">Seguir jugando</button>
+            <button id="new-game-win-btn">Nuevo juego</button>
+          </div>
+        </div>
+      </div>
+      <div id="grid" class="grid"></div>
+    </div>
+    <p class="instructions">Usa las <strong>flechas del teclado</strong> o <strong>desliza</strong> en móvil para mover las fichas.</p>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
