@@ -7,6 +7,9 @@ const om = document.getElementById('om');
 const ob = document.getElementById('ob');
 const nextEl = document.getElementById('next');
 const aimEl = document.getElementById('aim');
+const menu = document.getElementById('menu');
+const hud = document.getElementById('hud');
+const jugarBtn = document.getElementById('jugar');
 
 const W = 400, H = 600;
 canvas.width = W;
@@ -301,5 +304,11 @@ canvas.addEventListener('touchmove', e => {
 
 ob.addEventListener('click', () => { init(); loop(); });
 
-init();
-loop();
+jugarBtn.addEventListener('click', () => {
+  menu.classList.add('hide');
+  hud.classList.remove('hide');
+  nextEl.classList.remove('hide');
+  aimEl.classList.remove('hide');
+  init();
+  loop();
+});
