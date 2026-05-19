@@ -13,9 +13,9 @@ canvas.width = W;
 canvas.height = H;
 
 const GND = H - 60;
-const GRAV = 0.6;
-const JUMP = -9;
-const PLAYER_SIZE = 30;
+const GRAV = 0.5;
+const JUMP = -8.5;
+const PLAYER_SIZE = 24;
 
 let player, obstacles, score, best, speed, gameOver, particles, frameCount, groundX;
 
@@ -37,8 +37,8 @@ function init() {
 }
 
 function spawnObstacle() {
-  const h = 20 + Math.random() * 40;
-  const w = 15 + Math.random() * 12;
+  const h = 16 + Math.random() * 28;
+  const w = 10 + Math.random() * 6;
   obstacles.push({
     x: W + 20,
     y: GND - h,
@@ -84,7 +84,8 @@ function update() {
   groundX -= speed;
   if (groundX <= -40) groundX += 40;
 
-  if (frameCount % Math.max(30, 90 - speed * 3) === 0) {
+  const minGap = Math.max(25, 60 - speed * 1.5);
+  if (frameCount % Math.floor(minGap) === 0) {
     spawnObstacle();
   }
 
@@ -92,21 +93,22 @@ function update() {
     const o = obstacles[i];
     o.x -= speed;
 
-    if (!o.passed && o.x + o.w < player.x) {
+    if (!o.passed && o.x + o.w < player.x - player.r) {
       o.passed = true;
       score++;
-      if (score % 5 === 0 && speed < 10) speed += 0.5;
+      speed += 0.08;
     }
 
-    if (o.x + o.w < -20) {
+    if (o.x + o.w < -40) {
       obstacles.splice(i, 1);
       continue;
     }
 
-    const px = player.x - player.r;
-    const py = player.y;
-    const pr = player.r;
-    if (px + pr > o.x && px - pr < o.x + o.w && py + pr > o.y && py - pr < o.y + o.h) {
+    const cx = player.x, cy = player.y + player.r, r = player.r;
+    const nearX = Math.max(o.x, Math.min(cx, o.x + o.w));
+    const nearY = Math.max(o.y, Math.min(cy, o.y + o.h));
+    const dx = cx - nearX, dy = cy - nearY;
+    if (dx * dx + dy * dy < r * r) {
       gameOver = true;
       spawnParticles(player.x, player.y, '#ff6b6b', 20);
       if (score > best) {
@@ -205,10 +207,13 @@ function draw() {
   ctx.font = 'bold 20px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText(`⭐ ${score}`, 15, 32);
+  ctx.fillStyle = '#556688';
+  ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(`⚡ ${speed.toFixed(1)}`, 15, 50);
   if (best > 0) {
-    ctx.fillStyle = '#556688';
-    ctx.font = '14px "Segoe UI", system-ui, sans-serif';
-    ctx.fillText(`Mejor: ${best}`, 15, 52);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+    ctx.fillText(`🏆 ${best}`, 15, 68);
   }
 }
 
