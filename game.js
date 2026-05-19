@@ -172,7 +172,7 @@ function draw() {
     grad.addColorStop(1, lighten(o.color, 40));
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.roundRect(o.x, o.y, o.w, o.h, 4);
+    ctx.rect(o.x, o.y, o.w, o.h);
     ctx.fill();
     ctx.shadowBlur = 0;
   }
