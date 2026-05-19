@@ -3,27 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Bubble Pop</title>
+  <title>Salta!</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game">
-    <div id="hud" class="hide">
-      <span id="score">0</span>
-    </div>
-    <canvas id="c"></canvas>
-    <div id="next" class="hide"></div>
-    <div id="aim" class="hide"></div>
-    <div id="menu">
-      <h1>Bubble Pop</h1>
-      <p>Revienta burbujas combinando 3 del mismo color</p>
-      <button id="jugar">JUGAR</button>
-    </div>
-    <div id="overlay" class="hide">
-      <h2 id="oh"></h2>
-      <p id="om"></p>
-      <button id="ob">play again</button>
-    </div>
+  <canvas id="c"></canvas>
+  <div id="menu">
+    <h1>Salta!</h1>
+    <p>Esquiva los obstáculos saltando</p>
+    <button id="jugar">JUGAR</button>
+  </div>
+  <div id="overlay" class="hide">
+    <h2 id="oh">Game Over</h2>
+    <p id="os">Puntaje: 0</p>
+    <p id="obest">Mejor: 0</p>
+    <button id="r">JUGAR</button>
   </div>
   <script src="game.js"></script>
 </body>

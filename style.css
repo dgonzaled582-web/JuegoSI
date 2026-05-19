@@ -1,6 +1,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  background: #1a1a2e;
+  background: #0f0f23;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -11,114 +11,76 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
-#game {
-  position: relative;
-  width: 400px;
-  height: 600px;
-}
 canvas {
   display: block;
   width: 100%;
-  height: 100%;
-  background: #16213e;
-  border-radius: 12px;
-  cursor: crosshair;
+  max-width: 600px;
+  background: #0f0f23;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 0 60px rgba(0,0,0,.5);
 }
-#hud {
-  position: absolute;
-  top: 10px; right: 15px;
-  color: #e94560;
-  font-size: 24px;
-  font-weight: 700;
-  z-index: 2;
-  text-shadow: 0 0 10px rgba(233,69,96,.5);
-}
-#next {
-  position: absolute;
-  bottom: 75px; right: 15px;
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.3);
-  z-index: 2;
-}
-#aim {
-  position: absolute;
-  bottom: 20px; left: 50%;
-  width: 4px; height: 50px;
-  background: rgba(255,255,255,.15);
-  transform-origin: bottom center;
-  border-radius: 2px;
-  z-index: 2;
-  pointer-events: none;
-}
-#menu {
-  position: absolute;
+#menu, #overlay {
+  position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  border-radius: 12px;
+  background: rgba(15,15,35,.95);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  z-index: 20;
+  gap: 14px;
+  z-index: 10;
 }
 #menu h1 {
-  font-size: 52px;
+  font-size: 64px;
   font-weight: 800;
-  background: linear-gradient(135deg, #e94560, #a855f7);
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff);
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: none;
+  animation: grad 3s ease infinite;
+}
+@keyframes grad {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 #menu p {
-  color: #8899aa;
-  font-size: 15px;
-  text-align: center;
-  max-width: 260px;
+  color: #8899bb;
+  font-size: 16px;
 }
-#menu button {
-  background: linear-gradient(135deg, #e94560, #d63851);
+#menu button, #overlay button {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
   color: #fff;
   border: none;
   border-radius: 50px;
-  padding: 14px 56px;
+  padding: 14px 60px;
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 2px;
-  margin-top: 10px;
-  box-shadow: 0 4px 20px rgba(233,69,96,.4);
+  margin-top: 8px;
+  box-shadow: 0 4px 25px rgba(255,107,107,.4);
   transition: transform .15s, box-shadow .15s;
 }
-#menu button:hover {
+#menu button:hover, #overlay button:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 28px rgba(233,69,96,.6);
+  box-shadow: 0 6px 35px rgba(255,107,107,.6);
 }
-#overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(22,33,62,.92);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  z-index: 10;
+#overlay h2 {
+  font-size: 42px;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-#overlay h2 { font-size: 42px; color: #e94560; }
-#overlay p { font-size: 18px; color: #aaa; }
-#overlay button, #ob, #p {
-  background: #e94560;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 32px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
+#overlay p {
+  color: #8899bb;
+  font-size: 18px;
 }
-#overlay button:hover { background: #d63851; }
+#overlay p:last-of-type {
+  color: #ffd93d;
+  font-size: 14px;
+}
 .hide { display: none !important; }
