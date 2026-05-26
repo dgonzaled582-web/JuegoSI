@@ -13,8 +13,8 @@ canvas.width = W;
 canvas.height = H;
 
 const GND = H - 60;
-const GRAV = 0.4; 
-const JUMP = -8.5; 
+const GRAV = 0.5; 
+const JUMP = -9.5; // Un poco más de fuerza para que el salto se sienta genial
 const PLAYER_SIZE = 24;
 
 let player, obstacles, score, best = 0, speed, gameOver = true, particles, frameCount;
@@ -28,7 +28,8 @@ function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function init() {
   const radius = PLAYER_SIZE / 2;
-  player = { x: 100, y: GND - radius, vy: 0, r: radius };
+  // Sistema de control booleano directo para el suelo
+  player = { x: 100, y: GND - radius, vy: 0, r: radius, grounded: true };
   obstacles = [];
   particles = [];
   score = 0;
@@ -85,9 +86,10 @@ function spawnParticles(x, y, color, count) {
 function jump() {
   if (gameOver || !menu.classList.contains('hide')) return;
   
-  // Tolerancia física limpia: salta si su velocidad vertical está quieta
-  if (Math.abs(player.vy) < 0.01) {
+  // SOLUCIÓN DEFINITIVA: Si el flag de suelo es true, salta instantáneamente
+  if (player.grounded) {
     player.vy = JUMP;
+    player.grounded = false; // Desactivar inmediatamente al saltar
     spawnParticles(player.x, player.y + player.r, playerColor, 8);
     playerColor = rand(COLORS); 
   }
@@ -110,9 +112,13 @@ function update() {
   if (gameOver) return;
   frameCount++;
 
-  player.vy += GRAV;
-  player.y += player.vy;
+  // Aplicar gravedad si no está en el suelo
+  if (!player.grounded) {
+    player.vy += GRAV;
+    player.y += player.vy;
+  }
 
+  // Comprobar si hay suelo debajo del jugador
   let overPlatform = false;
   for (const g of grounds) {
     if (player.x >= g.x && player.x <= g.x + g.w) {
@@ -123,11 +129,22 @@ function update() {
 
   const bottomY = player.y + player.r;
 
-  if (overPlatform && bottomY >= GND && player.vy >= 0) {
-    player.y = GND - player.r; 
-    player.vy = 0;             
-  } 
-  else if (player.y > H + 50) { 
+  if (overPlatform) {
+    // Si cae y cruza la superficie del suelo
+    if (bottomY >= GND) {
+      player.y = GND - player.r; 
+      player.vy = 0;             
+      player.grounded = true; // Activar el salto de nuevo
+    }
+  } else {
+    // Si se le acaba la plataforma de debajo, empieza a caer al vacío
+    player.grounded = false;
+    player.vy += GRAV;
+    player.y += player.vy;
+  }
+
+  // Si cae fuera del mapa por un hueco
+  if (player.y > H + 50) { 
     triggerGameOver();
     return;
   }
@@ -301,6 +318,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+// Control total de eventos nativos
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault();
@@ -308,13 +326,18 @@ document.addEventListener('keydown', e => {
   }
 });
 
-canvas.addEventListener('click', jump);
+canvas.addEventListener('mousedown', e => {
+  e.preventDefault();
+  jump();
+});
+
 canvas.addEventListener('touchstart', e => { 
   e.preventDefault(); 
   jump(); 
 }, { passive: false });
 
-jugarBtn.addEventListener('click', () => {
+jugarBtn.addEventListener('click', e => {
+  e.stopPropagation();
   best = parseInt(localStorage.getItem('bestJump')) || 0;
   init();
   if (!loopIniciado) {
@@ -323,6 +346,7 @@ jugarBtn.addEventListener('click', () => {
   }
 });
 
-rBtn.addEventListener('click', () => {
+rBtn.addEventListener('click', e => {
+  e.stopPropagation();
   init();
 });
