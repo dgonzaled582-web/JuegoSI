@@ -13,12 +13,12 @@ canvas.width = W;
 canvas.height = H;
 
 const GND = H - 60;
-const GRAV = 0.5;
-const JUMP = -9.0; 
+const GRAV = 0.4; 
+const JUMP = -8.5; 
 const PLAYER_SIZE = 24;
 
 let player, obstacles, score, best = 0, speed, gameOver = true, particles, frameCount;
-let grounds, stars; 
+let grounds, stars, loopIniciado = false; 
 let playerColor = '#4d96ff';
 
 const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9ff3','#f368e0','#ff9f43','#0abde3'];
@@ -28,7 +28,7 @@ function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function init() {
   const radius = PLAYER_SIZE / 2;
-  player = { x: 100, y: GND - radius, vy: 0, r: radius, alive: true };
+  player = { x: 100, y: GND - radius, vy: 0, r: radius };
   obstacles = [];
   particles = [];
   score = 0;
@@ -83,14 +83,12 @@ function spawnParticles(x, y, color, count) {
 }
 
 function jump() {
-  // Si el juego terminó o estás en el menú principal, no salta
   if (gameOver || !menu.classList.contains('hide')) return;
   
-  const bottomY = player.y + player.r;
-  // Margen de tolerancia física y verificación de velocidad cero
-  if (Math.abs(bottomY - GND) < 1.5 && player.vy === 0) {
+  // Tolerancia física limpia: salta si su velocidad vertical está quieta
+  if (Math.abs(player.vy) < 0.01) {
     player.vy = JUMP;
-    spawnParticles(player.x, GND, playerColor, 8);
+    spawnParticles(player.x, player.y + player.r, playerColor, 8);
     playerColor = rand(COLORS); 
   }
 }
@@ -173,7 +171,7 @@ function update() {
     if (!o.passed && o.x + o.w < player.x - player.r) {
       o.passed = true;
       score++;
-      speed += 0.07; 
+      speed += 0.06; 
     }
 
     if (o.x + o.w < -40) {
@@ -319,9 +317,12 @@ canvas.addEventListener('touchstart', e => {
 jugarBtn.addEventListener('click', () => {
   best = parseInt(localStorage.getItem('bestJump')) || 0;
   init();
-  loop();
+  if (!loopIniciado) {
+    loopIniciado = true;
+    loop();
+  }
 });
 
 rBtn.addEventListener('click', () => {
-  init(); // El reintentar ahora simplemente limpia el canvas y resetea sin duplicar el loop
+  init();
 });
