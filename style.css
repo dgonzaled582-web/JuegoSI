@@ -30,6 +30,9 @@ canvas {
   align-items: center;
   gap: 14px;
   z-index: 10;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  pointer-events: auto; /* Permite clicks cuando es visible */
 }
 #menu h1 {
   font-size: 64px;
@@ -83,4 +86,9 @@ canvas {
   color: #ffd93d;
   font-size: 14px;
 }
-.hide { display: none !important; }
+
+/* FIX: Desvanece las capas y desactiva por completo sus colisiones con el ratón */
+.hide { 
+  opacity: 0 !important; 
+  pointer-events: none !important; 
+}
