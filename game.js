@@ -14,10 +14,10 @@ canvas.height = H;
 
 const GND = H - 60;
 const GRAV = 0.5;
-const JUMP = -9.0; // Un toque más de impulso para asegurar que cruce los huecos
+const JUMP = -9.0; 
 const PLAYER_SIZE = 24;
 
-let player, obstacles, score, best, speed, gameOver, particles, frameCount;
+let player, obstacles, score, best = 0, speed, gameOver = true, particles, frameCount;
 let grounds, stars; 
 let playerColor = '#4d96ff';
 
@@ -36,9 +36,10 @@ function init() {
   frameCount = 0;
   gameOver = false;
   playerColor = '#4d96ff';
+  
   overlay.classList.add('hide');
+  menu.classList.add('hide');
 
-  // Suelo inicial extendido para empezar estables
   grounds = [{ x: 0, w: W + 300 }];
 
   stars = [];
@@ -54,7 +55,6 @@ function init() {
 
 function spawnObstacle() {
   const lastGround = grounds[grounds.length - 1];
-  // Solo genera obstáculo si hay suelo en la zona de spawn (W)
   if (lastGround && lastGround.x + lastGround.w > W) {
     const h = 16 + Math.random() * 28;
     const w = 10 + Math.random() * 6;
@@ -83,11 +83,12 @@ function spawnParticles(x, y, color, count) {
 }
 
 function jump() {
-  if (gameOver) return;
+  // Si el juego terminó o estás en el menú principal, no salta
+  if (gameOver || !menu.classList.contains('hide')) return;
   
-  // SOLUCIÓN: Si está en el nivel del suelo y su velocidad física es 0, puede saltar seguro
   const bottomY = player.y + player.r;
-  if (Math.abs(bottomY - GND) < 1 && player.vy === 0) {
+  // Margen de tolerancia física y verificación de velocidad cero
+  if (Math.abs(bottomY - GND) < 1.5 && player.vy === 0) {
     player.vy = JUMP;
     spawnParticles(player.x, GND, playerColor, 8);
     playerColor = rand(COLORS); 
@@ -111,11 +112,9 @@ function update() {
   if (gameOver) return;
   frameCount++;
 
-  // Aplicar gravedad física estándar
   player.vy += GRAV;
   player.y += player.vy;
 
-  // Comprobar si bajo los pies del jugador hay una plataforma sólida
   let overPlatform = false;
   for (const g of grounds) {
     if (player.x >= g.x && player.x <= g.x + g.w) {
@@ -126,24 +125,20 @@ function update() {
 
   const bottomY = player.y + player.r;
 
-  // Si está sobre suelo firme y cruza la línea del suelo...
   if (overPlatform && bottomY >= GND && player.vy >= 0) {
-    player.y = GND - player.r; // Mantenerlo exactamente en la superficie
-    player.vy = 0;             // Detener gravedad
+    player.y = GND - player.r; 
+    player.vy = 0;             
   } 
-  // Si no hay plataforma debajo y cae al vacío...
   else if (player.y > H + 50) { 
     triggerGameOver();
     return;
   }
 
-  // Fondo
   for (const s of stars) {
     s.x -= speed * s.speed;
     if (s.x < -10) s.x = W + 10;
   }
 
-  // Mover plataformas
   for (let i = grounds.length - 1; i >= 0; i--) {
     grounds[i].x -= speed;
     if (grounds[i].x + grounds[i].w < -50) {
@@ -151,14 +146,13 @@ function update() {
     }
   }
 
-  // Generar suelos y huecos de forma fluida
   const lastGround = grounds[grounds.length - 1];
   if (!lastGround || (lastGround.x + lastGround.w < W + 150)) {
     const nextX = lastGround ? lastGround.x + lastGround.w : W;
-    const makeGap = Math.random() > 0.45 && frameCount > 120; // Margen inicial sin huecos
+    const makeGap = Math.random() > 0.45 && frameCount > 120;
     
     if (makeGap) {
-      const gapWidth = 50 + Math.random() * 45; // Huecos más balanceados
+      const gapWidth = 50 + Math.random() * 45; 
       const platformWidth = 180 + Math.random() * 200;
       grounds.push({ x: nextX + gapWidth, w: platformWidth });
     } else {
@@ -167,7 +161,6 @@ function update() {
     }
   }
 
-  // Obstáculos
   const minGap = Math.max(40, 80 - speed * 1.5);
   if (frameCount % Math.floor(minGap) === 0) {
     spawnObstacle();
@@ -180,7 +173,7 @@ function update() {
     if (!o.passed && o.x + o.w < player.x - player.r) {
       o.passed = true;
       score++;
-      speed += 0.07; // Incremento de velocidad suave
+      speed += 0.07; 
     }
 
     if (o.x + o.w < -40) {
@@ -188,7 +181,6 @@ function update() {
       continue;
     }
 
-    // Colisión de caja contra círculo perfecta
     const cx = player.x, cy = player.y, r = player.r;
     const nearX = Math.max(o.x, Math.min(cx, o.x + o.w));
     const nearY = Math.max(o.y, Math.min(cy, o.y + o.h));
@@ -200,7 +192,6 @@ function update() {
     }
   }
 
-  // Partículas
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
@@ -214,7 +205,6 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
-  // Fondo (Cielo)
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
   skyGrad.addColorStop(0, '#0f0f23');
   skyGrad.addColorStop(0.6, '#1a1a3e');
@@ -222,7 +212,6 @@ function draw() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // Estrellas
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   for (const s of stars) {
     ctx.beginPath();
@@ -230,7 +219,6 @@ function draw() {
     ctx.fill();
   }
 
-  // Plataformas de suelo
   for (const g of grounds) {
     ctx.fillStyle = '#2d2d5e';
     ctx.fillRect(g.x, GND, g.w, H - GND);
@@ -248,7 +236,6 @@ function draw() {
     }
   }
 
-  // Partículas
   for (const p of particles) {
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
@@ -256,7 +243,6 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // Obstáculos con brillo de neón
   for (const o of obstacles) {
     ctx.shadowColor = o.color;
     ctx.shadowBlur = 12;
@@ -270,7 +256,6 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // El Jugador (Bola de Neón)
   ctx.shadowColor = playerColor;
   ctx.shadowBlur = 20;
   const pg = ctx.createRadialGradient(
@@ -284,7 +269,6 @@ function draw() {
   ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
   ctx.fill();
 
-  // Ojitos animados orientados al frente
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
@@ -292,7 +276,6 @@ function draw() {
   ctx.arc(player.x + 5, player.y - 2, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Marcador UI
   ctx.fillStyle = '#8899bb';
   ctx.font = 'bold 20px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'left';
@@ -320,7 +303,6 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// Controles por teclado arreglados
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault();
@@ -328,7 +310,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Controles táctiles y click de ratón
 canvas.addEventListener('click', jump);
 canvas.addEventListener('touchstart', e => { 
   e.preventDefault(); 
@@ -336,12 +317,11 @@ canvas.addEventListener('touchstart', e => {
 }, { passive: false });
 
 jugarBtn.addEventListener('click', () => {
-  menu.classList.add('hide');
   best = parseInt(localStorage.getItem('bestJump')) || 0;
   init();
   loop();
 });
 
 rBtn.addEventListener('click', () => {
-  init();
+  init(); // El reintentar ahora simplemente limpia el canvas y resetea sin duplicar el loop
 });
