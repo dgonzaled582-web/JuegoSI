@@ -11,17 +11,21 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
+#game-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+}
 canvas {
   display: block;
   width: 100%;
-  max-width: 600px;
   background: #0f0f23;
   border-radius: 16px;
   cursor: pointer;
   box-shadow: 0 0 60px rgba(0,0,0,.5);
 }
 #menu, #overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: rgba(15,15,35,.95);
   display: flex;
@@ -30,9 +34,10 @@ canvas {
   align-items: center;
   gap: 14px;
   z-index: 10;
+  border-radius: 16px;
   opacity: 1;
-  transition: opacity 0.25s ease;
-  pointer-events: auto; /* Permite clicks cuando es visible */
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
 }
 #menu h1 {
   font-size: 64px;
@@ -49,7 +54,7 @@ canvas {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-#menu p {
+#menu p, #overlay p {
   color: #8899bb;
   font-size: 16px;
 }
@@ -78,16 +83,10 @@ canvas {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#overlay p {
-  color: #8899bb;
-  font-size: 18px;
-}
 #overlay p:last-of-type {
   color: #ffd93d;
   font-size: 14px;
 }
-
-/* FIX: Desvanece las capas y desactiva por completo sus colisiones con el ratón */
 .hide { 
   opacity: 0 !important; 
   pointer-events: none !important; 
