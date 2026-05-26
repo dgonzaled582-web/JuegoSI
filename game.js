@@ -17,15 +17,15 @@ const GRAV = 0.5;
 const JUMP = -9.5; 
 const PLAYER_SIZE = 24;
 
-// --- NUEVAS CONSTANTES PARA LA NAVE Y RAMPAS ---
-const NAVE_SCORE = 15; // Puntaje requerido para transformarse en nave
-const NAVE_GRAV = 0.3; // Gravedad más ligera para la nave
-const NAVE_FLY_FORCE = -0.6; // Empuje hacia arriba al mantener presionado
+// --- CONSTANTES DE JUEGO (NAVE Y RAMPAS) ---
+const NAVE_SCORE = 15;       // Puntaje para transformarse en nave
+const NAVE_GRAV = 0.3;       // Gravedad más suave para la nave
+const NAVE_FLY_FORCE = -0.6; // Fuerza de empuje al mantener presionado
 
 let player, obstacles, score, best = 0, speed, gameOver = true, particles, frameCount;
 let grounds, stars, loopIniciado = false; 
 let playerColor = '#4d96ff';
-let isPressing = false; // Detecta si el usuario mantiene presionado el control (para la nave)
+let isPressing = false;     // Detecta si mantienes presionado el botón
 
 const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9ff3','#f368e0','#ff9f43','#0abde3'];
 const OBS_COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#f368e0'];
@@ -34,7 +34,7 @@ function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function init() {
   const radius = PLAYER_SIZE / 2;
-  // Añadimos la propiedad "mode" ('bola' o 'nave')
+  // Inicializamos con el modo 'bola' por defecto
   player = { x: 100, y: GND - radius, vy: 0, r: radius, grounded: true, mode: 'bola' };
   obstacles = [];
   particles = [];
@@ -47,7 +47,7 @@ function init() {
   overlay.classList.add('hide');
   menu.classList.add('hide');
 
-  grounds = [{ x: 0, w: W + 300, hasRamp: false }]; // El primer suelo no tiene rampa
+  grounds = [{ x: 0, w: W + 300, hasRamp: false }];
 
   stars = [];
   for (let i = 0; i < 40; i++) {
@@ -63,7 +63,7 @@ function init() {
 function spawnObstacle() {
   const lastGround = grounds[grounds.length - 1];
   if (lastGround && lastGround.x + lastGround.w > W) {
-    // Si la plataforma tiene rampa, evitamos spawnear el obstáculo encima de ella
+    // Si la plataforma tiene rampa al final, evitamos generar el obstáculo sobre ella
     const obstacleX = lastGround.hasRamp ? lastGround.x + lastGround.w - 120 : W + 20;
     
     if (obstacleX > player.x + 50) {
@@ -94,11 +94,12 @@ function spawnParticles(x, y, color, count) {
   }
 }
 
-// --- SISTEMA DE CONTROL DE ENTRADAS ---
+// --- GESTIÓN DE ACCIONES (PULSAR Y SOLTAR) ---
 function pressStart() {
   isPressing = true;
   if (gameOver || !menu.classList.contains('hide')) return;
-
+  
+  // Salto instantáneo solo en modo bola si está tocando el suelo
   if (player.mode === 'bola' && player.grounded) {
     player.vy = JUMP;
     player.grounded = false;
@@ -128,48 +129,26 @@ function update() {
   if (gameOver) return;
   frameCount++;
 
-  // EVOLUCIÓN A NAVE: Si se llega al puntaje objetivo
+  // TRANFORMACIÓN: Evolución a nave espacial al alcanzar el puntaje requerido
   if (score >= NAVE_SCORE && player.mode === 'bola') {
     player.mode = 'nave';
-    playerColor = '#ffd93d'; // Color dorado de nave espacial
+    playerColor = '#ffd93d'; 
     spawnParticles(player.x, player.y, '#ffffff', 15);
   }
 
-  // --- FÍSICAS REVISADAS (BOLA VS NAVE) ---
-  if (player.mode === 'nave') {
-    player.grounded = false; // La nave nunca se queda "pegada" al suelo estática
-    if (isPressing) {
-      player.vy += NAVE_FLY_FORCE; // Volar hacia arriba
-      if (frameCount % 3 === 0) spawnParticles(player.x - player.r, player.y, '#ff9f43', 2);
-    } else {
-      player.vy += NAVE_GRAV; // Caer por gravedad
-    }
-    player.y += player.vy;
-    
-    // Límites de pantalla para la nave (Techo y Suelo básico)
-    if (player.y - player.r < 0) { player.y = player.r; player.vy = 0; }
-  } else {
-    // Modo Bola Convencional
-    if (!player.grounded) {
-      player.vy += GRAV;
-      player.y += player.vy;
-    }
-  }
-
-  // --- DETECCIÓN DE SUELO Y NUEVAS RAMPAS ---
-  let currentGndY = GND; // El nivel del suelo por defecto
+  // --- DETECCIÓN DE SUELO DINÁMICO (Y RAMPAS) ---
+  let currentGndY = GND; 
   let overPlatform = false;
 
   for (const g of grounds) {
     if (player.x >= g.x && player.x <= g.x + g.w) {
       overPlatform = true;
       
-      // Si la plataforma tiene rampa en su parte final (últimos 100px)
+      // Si la plataforma tiene rampa activa en sus últimos 100px
       if (g.hasRamp && player.x >= (g.x + g.w - 100)) {
-        const progress = (player.x - (g.x + g.w - 100)) / 100; // De 0 a 1
-        currentGndY = GND - (progress * 50); // Sube hasta 50px de altura
+        const progress = (player.x - (g.x + g.w - 100)) / 100; 
+        currentGndY = GND - (progress * 50); // Elevación máxima de 50px
         
-        // En modo bola, si camina por la rampa se considera "grounded" y sube con ella
         if (player.mode === 'bola' && player.grounded) {
           player.y = currentGndY - player.r;
         }
@@ -178,14 +157,36 @@ function update() {
     }
   }
 
+  // --- FÍSICAS CORREGIDAS (UNIFICADAS) ---
+  if (player.mode === 'nave') {
+    player.grounded = false; 
+    if (isPressing) {
+      player.vy += NAVE_FLY_FORCE; // Empuje propulsor hacia arriba
+      if (frameCount % 3 === 0) spawnParticles(player.x - player.r, player.y, '#ff9f43', 2);
+    } else {
+      player.vy += NAVE_GRAV; // Caída por gravedad ligera
+    }
+    player.y += player.vy;
+    
+    // Topes para que la nave no se salga del techo
+    if (player.y - player.r < 0) { player.y = player.r; player.vy = 0; }
+
+  } else {
+    // Modo Bola: La gravedad se aplica de manera única y limpia aquí si está en el aire
+    if (!player.grounded) {
+      player.vy += GRAV;
+      player.y += player.vy;
+    }
+  }
+
+  // --- COMPROBACIÓN DE COLISIÓN CON PLATAFORMA ---
   const bottomY = player.y + player.r;
 
   if (overPlatform) {
-    // Si toca el suelo dinámico (plano o rampa)
     if (bottomY >= currentGndY) {
-      // Impulso especial si sale despedido por el final de una rampa alta
-      if (player.mode === 'bola' && currentGndY < GND && player.vy >= 0 && player.x >= (W/2)) {
-         player.vy = JUMP * 1.2; // Súper salto automático al llegar al final de la rampa
+      // Súper salto automático si la bola sale disparada desde la rampa elevada
+      if (player.mode === 'bola' && currentGndY < GND && player.vy >= 0) {
+         player.vy = JUMP * 1.2; 
          player.grounded = false;
          spawnParticles(player.x, player.y, '#6bcb77', 12);
       } else {
@@ -195,26 +196,23 @@ function update() {
       }
     }
   } else {
+    // Si cruza un hueco, el estado en el suelo se cancela limpiamente sin tirones
     player.grounded = false;
-    if (player.mode === 'bola') {
-      player.vy += GRAV;
-      player.y += player.vy;
-    }
   }
 
-  // Caer al vacío
+  // Caída al vacío definitivo
   if (player.y > H + 50) { 
     triggerGameOver();
     return;
   }
 
-  // Actualizar estrellas
+  // Movimiento de estrellas
   for (const s of stars) {
     s.x -= speed * s.speed;
     if (s.x < -10) s.x = W + 10;
   }
 
-  // Mover plataformas
+  // Desplazamiento y limpieza de plataformas
   for (let i = grounds.length - 1; i >= 0; i--) {
     grounds[i].x -= speed;
     if (grounds[i].x + grounds[i].w < -100) {
@@ -222,13 +220,13 @@ function update() {
     }
   }
 
-  // Generar nuevos suelos con/sin rampas o huecos
+  // Generador inteligente de terrenos y huecos
   const lastGround = grounds[grounds.length - 1];
   if (!lastGround || (lastGround.x + lastGround.w < W + 150)) {
     const nextX = lastGround ? lastGround.x + lastGround.w : W;
     const makeGap = Math.random() > 0.45 && frameCount > 120;
     const platformWidth = 200 + Math.random() * 200;
-    // Las rampas aparecen aleatoriamente solo en modo Bola
+    // Las rampas aparecen de forma aleatoria únicamente en el modo Bola
     const hasRamp = player.mode === 'bola' && Math.random() > 0.5 && platformWidth > 250;
     
     if (makeGap) {
@@ -244,7 +242,7 @@ function update() {
     spawnObstacle();
   }
 
-  // Control de obstáculos y colisiones
+  // Control de colisión con obstáculos
   for (let i = obstacles.length - 1; i >= 0; i--) {
     const o = obstacles[i];
     o.x -= speed;
@@ -271,7 +269,7 @@ function update() {
     }
   }
 
-  // Partículas
+  // Ciclo de vida de partículas
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
@@ -285,7 +283,7 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
-  // Fondo espacial
+  // Fondo gradiente espacial
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
   skyGrad.addColorStop(0, '#0f0f23');
   skyGrad.addColorStop(0.6, '#1a1a3e');
@@ -293,7 +291,7 @@ function draw() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // Estrellas
+  // Estrellas lejanas
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   for (const s of stars) {
     ctx.beginPath();
@@ -301,7 +299,7 @@ function draw() {
     ctx.fill();
   }
 
-  // --- RENDERIZADO DE SUELO Y RAMPAS ---
+  // --- RENDERIZADO DEL SUELO Y LAS RAMPAS ---
   for (const g of grounds) {
     ctx.fillStyle = '#2d2d5e';
     ctx.strokeStyle = '#4d4d8e';
@@ -311,13 +309,11 @@ function draw() {
     ctx.moveTo(g.x, GND);
     
     if (g.hasRamp) {
-      // Dibujar línea subiendo la rampa (los últimos 100px)
       ctx.lineTo(g.x + g.w - 100, GND);
       ctx.lineTo(g.x + g.w, GND - 50);
       ctx.lineTo(g.x + g.w, H);
       ctx.lineTo(g.x, H);
     } else {
-      // Suelo plano normal
       ctx.lineTo(g.x + g.w, GND);
       ctx.lineTo(g.x + g.w, H);
       ctx.lineTo(g.x, H);
@@ -325,7 +321,7 @@ function draw() {
     ctx.closePath();
     ctx.fill();
     
-    // Dibujar el borde superior brillante
+    // Línea brillante superior del camino
     ctx.beginPath();
     ctx.moveTo(g.x, GND);
     if (g.hasRamp) {
@@ -337,7 +333,7 @@ function draw() {
     ctx.stroke();
   }
 
-  // Partículas
+  // Partículas en pantalla
   for (const p of particles) {
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
@@ -345,7 +341,7 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // Obstáculos
+  // Renderizado de obstáculos neón
   for (const o of obstacles) {
     ctx.shadowColor = o.color;
     ctx.shadowBlur = 12;
@@ -359,28 +355,28 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // --- RENDERIZADO DEL JUGADOR (BOLA VS NAVE) ---
+  // --- RE-DISEÑO DEL JUGADOR (BOLA VS NAVE) ---
   ctx.shadowColor = playerColor;
   ctx.shadowBlur = 20;
 
   if (player.mode === 'nave') {
-    // DISEÑO DE LA NAVE (Estilo nave futurista triangular/geométrica de Geometry Dash)
+    // Aspecto de Cohete espacial geométrico futurista
     ctx.fillStyle = playerColor;
     ctx.beginPath();
-    ctx.moveTo(player.x + player.r, player.y); // Punta delantera
-    ctx.lineTo(player.x - player.r, player.y - player.r + 4); // Ala superior trasera
-    ctx.lineTo(player.x - player.r + 6, player.y); // Centro interior trasero
-    ctx.lineTo(player.x - player.r, player.y + player.r - 4); // Ala inferior trasera
+    ctx.moveTo(player.x + player.r, player.y); 
+    ctx.lineTo(player.x - player.r, player.y - player.r + 4); 
+    ctx.lineTo(player.x - player.r + 6, player.y); 
+    ctx.lineTo(player.x - player.r, player.y + player.r - 4); 
     ctx.closePath();
     ctx.fill();
 
-    // Cabina de la nave
+    // Ventana/Cabina brillante de la nave
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.ellipse(player.x + 2, player.y - 1, 6, 3, 0, 0, Math.PI * 2);
     ctx.fill();
   } else {
-    // DISEÑO DE LA BOLA ORIGINAL
+    // Aspecto original de la Bola
     const pg = ctx.createRadialGradient(player.x, player.y, 2, player.x, player.y, player.r);
     pg.addColorStop(0, '#ffffff');
     pg.addColorStop(1, playerColor);
@@ -399,13 +395,13 @@ function draw() {
 
   ctx.shadowBlur = 0;
 
-  // UI - Texto en pantalla
+  // Interfaz Gráfica (UI)
   ctx.fillStyle = '#8899bb';
   ctx.font = 'bold 20px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText(`⭐ ${score}`, 15, 32);
   
-  // Indicador de modo de juego debajo del score
+  // Tag dinámico del modo actual
   ctx.fillStyle = player.mode === 'nave' ? '#ffd93d' : '#4d96ff';
   ctx.font = 'bold 11px "Segoe UI", system-ui, sans-serif';
   ctx.fillText(player.mode === 'nave' ? '🚀 MODO NAVE' : '🔵 MODO BOLA', 15, 52);
@@ -434,11 +430,11 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// --- CAPTURA DE EVENTOS CORREGIDA (SOPORTE DE RETENCIÓN PARA LA NAVE) ---
+// --- CAPTURA DE ACCIONES DE ENTRADA COMPLETAS ---
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault();
-    if(!isPressing) pressStart();
+    if (!isPressing) pressStart();
   }
 });
 document.addEventListener('keyup', e => {
