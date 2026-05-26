@@ -17,7 +17,10 @@ const GRAV = 0.5;
 const JUMP = -8.5;
 const PLAYER_SIZE = 24;
 
-let player, obstacles, score, best, speed, gameOver, particles, frameCount, groundX;
+let player, obstacles, score, best, speed, gameOver, particles, frameCount;
+// Nuevas variables para huecos y decoración
+let grounds, stars; 
+let playerColor = '#4d96ff'; // Color inicial del jugador
 
 const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff9ff3','#f368e0','#ff9f43','#0abde3'];
 const OBS_COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#f368e0'];
@@ -31,21 +34,41 @@ function init() {
   score = 0;
   speed = 4;
   frameCount = 0;
-  groundX = 0;
   gameOver = false;
+  playerColor = '#4d96ff';
   overlay.classList.add('hide');
+
+  // Inicializar plataformas del suelo (empezamos con un suelo continuo al principio)
+  grounds = [
+    { x: 0, w: W + 200 }
+  ];
+
+  // Inicializar estrellas de fondo decorativas
+  stars = [];
+  for (let i = 0; i < 40; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * (GND - 50),
+      size: 1 + Math.random() * 2,
+      speed: 0.2 + Math.random() * 0.8
+    });
+  }
 }
 
 function spawnObstacle() {
-  const h = 16 + Math.random() * 28;
-  const w = 10 + Math.random() * 6;
-  obstacles.push({
-    x: W + 20,
-    y: GND - h,
-    w, h,
-    color: rand(OBS_COLORS),
-    passed: false
-  });
+  // Solo genera obstáculo si el último suelo cubre la zona de spawn (para evitar obstáculos flotando sin suelo)
+  const lastGround = grounds[grounds.length - 1];
+  if (lastGround && lastGround.x + lastGround.w > W) {
+    const h = 16 + Math.random() * 28;
+    const w = 10 + Math.random() * 6;
+    obstacles.push({
+      x: W + 20,
+      y: GND - h,
+      w, h,
+      color: rand(OBS_COLORS),
+      passed: false
+    });
+  }
 }
 
 function spawnParticles(x, y, color, count) {
@@ -64,31 +87,112 @@ function spawnParticles(x, y, color, count) {
 
 function jump() {
   if (gameOver) return;
-  if (player.y >= GND - PLAYER_SIZE - 1) {
-    player.vy = JUMP;
-    spawnParticles(player.x, GND, '#ffd93d', 8);
+  
+  // Verificar si el jugador está tocando alguna plataforma para poder saltar
+  let onGround = false;
+  const cy = player.y + player.r;
+  if (Math.abs(cy - GND) < 2) {
+    for (const g of grounds) {
+      if (player.x >= g.x && player.x <= g.x + g.w) {
+        onGround = true;
+        break;
+      }
+    }
   }
+
+  if (onGround) {
+    player.vy = JUMP;
+    spawnParticles(player.x, GND, playerColor, 8);
+    // CAMBIO DE COLOR AL SALTAR
+    playerColor = rand(COLORS); 
+  }
+}
+
+function triggerGameOver() {
+  gameOver = true;
+  spawnParticles(player.x, player.y, '#ff6b6b', 20);
+  if (score > best) {
+    best = score;
+    localStorage.setItem('bestJump', best);
+  }
+  oh.textContent = 'Game Over';
+  os.textContent = `Puntaje: ${score}`;
+  obest.textContent = `Mejor: ${best}`;
+  overlay.classList.remove('hide');
 }
 
 function update() {
   if (gameOver) return;
   frameCount++;
 
+  // Actualizar jugador
   player.vy += GRAV;
   player.y += player.vy;
-  if (player.y > GND - PLAYER_SIZE) {
-    player.y = GND - PLAYER_SIZE;
-    player.vy = 0;
+
+  // Verificar si el jugador está sobre suelo firme
+  let overPlatform = false;
+  for (const g of grounds) {
+    if (player.x >= g.x && player.x <= g.x + g.w) {
+      overPlatform = true;
+      break;
+    }
   }
 
-  groundX -= speed;
-  if (groundX <= -40) groundX += 40;
+  // Si está sobre una plataforma y cae al nivel del suelo, frena
+  if (overPlatform && player.y > GND - PLAYER_SIZE && player.vy >= 0) {
+    player.y = GND - PLAYER_SIZE;
+    player.vy = 0;
+  } 
+  // SI SE CAE POR UN HUECO
+  else if (player.y > H + 50) { 
+    triggerGameOver();
+    return;
+  }
 
-  const minGap = Math.max(25, 60 - speed * 1.5);
+  // Actualizar estrellas de fondo (Decoración)
+  for (const s of stars) {
+    s.x -= speed * s.speed; // Efecto paralaje
+    if (s.x < -10) s.x = W + 10;
+  }
+
+  // Manejo de Plataformas (Suelo con huecos)
+  for (let i = grounds.length - 1; i >= 0; i--) {
+    grounds[i].x -= speed;
+    if (grounds[i].x + grounds[i].w < -50) {
+      grounds.splice(i, 1);
+    }
+  }
+
+  // Generar nuevo suelo de forma aleatoria
+  const lastGround = grounds[grounds.length - 1];
+  if (!lastGround || (lastGround.x + lastGround.w < W + 150)) {
+    const nextX = lastGround ? lastGround.x + lastGround.w : W;
+    const makeGap = Math.random() > 0.45 && frameCount > 100; // No hacer huecos al puro principio
+    
+    if (makeGap) {
+      const gapWidth = 60 + Math.random() * 50; // Ancho del hueco
+      const platformWidth = 150 + Math.random() * 200; // Ancho de la siguiente plataforma
+      grounds.push({
+        x: nextX + gapWidth,
+        w: platformWidth
+      });
+    } else {
+      // Si no hay hueco, simplemente extendemos o pegamos otra plataforma continua
+      const platformWidth = 150 + Math.random() * 200;
+      grounds.push({
+        x: nextX,
+        w: platformWidth
+      });
+    }
+  }
+
+  // Spawn Obstáculos (Ajustado el tiempo basado en velocidad)
+  const minGap = Math.max(35, 75 - speed * 1.5);
   if (frameCount % Math.floor(minGap) === 0) {
     spawnObstacle();
   }
 
+  // Actualizar Obstáculos y Colisiones
   for (let i = obstacles.length - 1; i >= 0; i--) {
     const o = obstacles[i];
     o.x -= speed;
@@ -104,25 +208,19 @@ function update() {
       continue;
     }
 
+    // Colisión de círculo con rectángulo
     const cx = player.x, cy = player.y + player.r, r = player.r;
     const nearX = Math.max(o.x, Math.min(cx, o.x + o.w));
     const nearY = Math.max(o.y, Math.min(cy, o.y + o.h));
     const dx = cx - nearX, dy = cy - nearY;
+    
     if (dx * dx + dy * dy < r * r) {
-      gameOver = true;
-      spawnParticles(player.x, player.y, '#ff6b6b', 20);
-      if (score > best) {
-        best = score;
-        localStorage.setItem('bestJump', best);
-      }
-      oh.textContent = 'Game Over';
-      os.textContent = `Puntaje: ${score}`;
-      obest.textContent = `Mejor: ${best}`;
-      overlay.classList.remove('hide');
+      triggerGameOver();
       return;
     }
   }
 
+  // Partículas
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
@@ -136,6 +234,7 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
+  // Fondo (Cielo)
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
   skyGrad.addColorStop(0, '#0f0f23');
   skyGrad.addColorStop(0.6, '#1a1a3e');
@@ -143,22 +242,36 @@ function draw() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H);
 
-  for (let i = 0; i < 20; i++) {
-    const sx = (i * 40 + groundX) % (W + 40);
-    const sw = 20 + Math.sin(i * 1.7 + frameCount * 0.02) * 5;
-    ctx.fillStyle = `rgba(255,255,255,${0.03 + Math.sin(i * 2.3) * 0.015})`;
-    ctx.fillRect(sx, GND, 20, H - GND);
+  // DIBUJAR DECORACIÓN: Estrellas de fondo
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  for (const s of stars) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  ctx.fillStyle = '#2d2d5e';
-  ctx.fillRect(0, GND, W, H - GND);
-  ctx.strokeStyle = '#4d4d8e';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, GND);
-  ctx.lineTo(W, GND);
-  ctx.stroke();
+  // DIBUJAR EL SUELO (Segmentado/Plataformas)
+  for (const g of grounds) {
+    // Relleno de la plataforma
+    ctx.fillStyle = '#2d2d5e';
+    ctx.fillRect(g.x, GND, g.w, H - GND);
+    
+    // Línea de neón superior de la plataforma
+    ctx.strokeStyle = '#4d4d8e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(g.x, GND);
+    ctx.lineTo(g.x + g.w, GND);
+    ctx.stroke();
 
+    // Efecto rejilla/líneas decorativas en el suelo activo
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    for (let step = 0; step < g.w; step += 30) {
+      ctx.fillRect(g.x + step, GND, 10, H - GND);
+    }
+  }
+
+  // Partículas
   for (const p of particles) {
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
@@ -166,6 +279,7 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
+  // Obstáculos
   for (const o of obstacles) {
     ctx.shadowColor = o.color;
     ctx.shadowBlur = 12;
@@ -179,30 +293,29 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  ctx.shadowColor = '#4d96ff';
+  // DIBUJAR JUGADOR (Con su nuevo color dinámico)
+  ctx.shadowColor = playerColor;
   ctx.shadowBlur = 20;
   const pg = ctx.createRadialGradient(
     player.x, player.y, 2,
     player.x, player.y, player.r
   );
-  pg.addColorStop(0, '#74b9ff');
-  pg.addColorStop(1, '#4d96ff');
+  pg.addColorStop(0, '#ffffff'); // Centro brillante
+  pg.addColorStop(1, playerColor);
   ctx.fillStyle = pg;
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
   ctx.fill();
 
+  // Ojos del jugador
   ctx.shadowBlur = 0;
-  ctx.fillStyle = '#a29bfe';
+  ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.arc(player.x - 5, player.y - 4, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#a29bfe';
-  ctx.beginPath();
-  ctx.arc(player.x + 5, player.y - 4, 4, 0, Math.PI * 2);
+  ctx.arc(player.x - 4, player.y - 2, 3, 0, Math.PI * 2);
+  ctx.arc(player.x + 4, player.y - 2, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.shadowBlur = 0;
+  // Interfaz de Usuario (UI)
   ctx.fillStyle = '#8899bb';
   ctx.font = 'bold 20px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'left';
